@@ -2,52 +2,56 @@
 """Importing needed modules for threading, triggering bash scripts and linux commands"""
 import os
 import subprocess
+import sys
 import threading
 
 # Global semaphore to control the concurrent execution of the calc.sh script
 SEMAPHORE = threading.Semaphore(2)
 
 
-def slow_sort_with_threading(unsorted_list, start_index,
-                             end_index, max_depth=4, current_depth=0):
+def slow_sort_with_threading(unsorted_list, start, end, max_depth=4, cur_depth=0):
     """
     A multithreaded implementation of the slowsort algorithm.
 
     Args:
         unsorted_list (list): The list to be sorted.
-        start_index (int): Starting index of the segment of the list to be sorted.
-        end_index (int): Ending index of the segment of the list to be sorted.
+        start (int): Starting index of the segment of the list to be sorted.
+        end (int): Ending index of the segment of the list to be sorted.
         max_depth (int): Maximum depth to create new threads for sorting.
-        current_depth (int): Current depth in the recursion tree.
+        cur_depth (int): Current depth in the recursion tree.
     """
-    if start_index >= end_index:
+    if start >= end:
         return
 
-    middle_index = (start_index + end_index) // 2
+    mid = (start + end) // 2
 
-    if current_depth < max_depth:
+    # Sort the first half
+    if cur_depth < max_depth:
         thread1 = threading.Thread(target=slow_sort_with_threading,
-                                   args=(unsorted_list, start_index, middle_index, max_depth, current_depth + 1))
-        thread2 = threading.Thread(target=slow_sort_with_threading,
-                                   args=(unsorted_list, middle_index + 1, end_index, max_depth, current_depth + 1))
-
+                                   args=(unsorted_list, start, mid, max_depth, cur_depth + 1))
         thread1.start()
-        thread2.start()
-
         thread1.join()
+    else:
+        slow_sort_with_threading(unsorted_list, start, mid, max_depth, cur_depth + 1)
+
+    # Sort the second half
+    if cur_depth < max_depth:
+        thread2 = threading.Thread(target=slow_sort_with_threading,
+                                   args=(unsorted_list, mid + 1, end, max_depth, cur_depth + 1))
+        thread2.start()
         thread2.join()
     else:
-        slow_sort_with_threading(unsorted_list, start_index, middle_index, max_depth, current_depth + 1)
-        slow_sort_with_threading(unsorted_list, middle_index + 1, end_index, max_depth, current_depth + 1)
+        slow_sort_with_threading(unsorted_list, mid + 1, end, max_depth, cur_depth + 1)
 
-    if unsorted_list[end_index] < unsorted_list[middle_index]:
-        unsorted_list[end_index], unsorted_list[middle_index] = \
-            unsorted_list[middle_index], unsorted_list[end_index]
+    # Perform the conditional swap
+    if unsorted_list[end] < unsorted_list[mid]:
+        unsorted_list[end], unsorted_list[mid] = unsorted_list[mid], unsorted_list[end]
 
-    slow_sort_with_threading(unsorted_list, start_index, end_index - 1, max_depth, current_depth + 1)
+    # Recursively sort the list again, excluding the last element
+    slow_sort_with_threading(unsorted_list, start, end - 1, max_depth, cur_depth + 1)
 
 
-def read_file(file_path):
+def read_file(file_path) -> list:
     """
     Reads a file and returns its contents as a list of lines.
 
@@ -61,7 +65,7 @@ def read_file(file_path):
         return [int(line.strip()) for line in file]
 
 
-def write_file(file_path, lines):
+def write_file(file_path, lines) -> None:
     """
     Writes a list of lines to a file. If the file exists, it's overwritten;
     otherwise, a new file is created.
@@ -75,7 +79,7 @@ def write_file(file_path, lines):
         file.writelines(lines)
 
 
-def change_file_permissions(file_path, permissions=0o600):
+def change_file_permissions(file_path, permissions=0o600) -> None:
     """
     Changes the permissions of a file.
 
@@ -86,7 +90,7 @@ def change_file_permissions(file_path, permissions=0o600):
     os.chmod(file_path, permissions)
 
 
-def main():
+def main() -> None:
     """
     Main function to process files. It reads numbers from old files,
     multiplies them using a Bash script, and writes the results to new files.
@@ -99,7 +103,11 @@ def main():
         lines_new = []
         for line in lines:
             with SEMAPHORE:
-                result = subprocess.run(["./calc.sh", str(line)], capture_output=True, text=True)
+                try:
+                    result = subprocess.run(["./calc.sh", str(line)],
+                                            capture_output=True, text=True, check=True)
+                except subprocess.CalledProcessError as e:
+                    print(f'An error occurred: {e}')
                 if result.returncode == 0:
                     lines_new.append(result.stdout.strip() + "\n")
                 else:
@@ -109,7 +117,7 @@ def main():
         write_file(new_file, lines_new)
         change_file_permissions(new_file)
 
-    exit(0)
+    sys.exit(0)
 
 
 if __name__ == '__main__':
