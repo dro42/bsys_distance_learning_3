@@ -76,7 +76,8 @@ def write_file(file_path, lines) -> None:
     """
     mode = 'w' if os.path.isfile(file_path) else 'x'
     with open(file_path, mode) as file:
-        file.writelines(lines)
+        for line in lines:
+            file.writelines(f'{line}\n')
 
 
 def change_file_permissions(file_path, permissions=0o600) -> None:
@@ -106,10 +107,10 @@ def main() -> None:
                 try:
                     result = subprocess.run(["./calc.sh", str(line)],
                                             capture_output=True, text=True, check=True)
-                except subprocess.CalledProcessError as e:
-                    print(f'An error occurred: {e}')
+                except subprocess.CalledProcessError as p_error:
+                    print(f'An error occurred: {p_error}')
                 if result.returncode == 0:
-                    lines_new.append(result.stdout.strip() + "\n")
+                    lines_new.append(int(result.stdout.strip()))
                 else:
                     print(f"Error processing line {line}: {result.stderr.strip()}")
 
