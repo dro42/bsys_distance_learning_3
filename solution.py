@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+"""Importing needed modules for threading, triggering bash scripts and linux commands"""
 import os
 import subprocess
 import threading
@@ -7,12 +8,13 @@ import threading
 SEMAPHORE = threading.Semaphore(2)
 
 
-def slow_sort_with_threading(list_to_be_sorted, start_index, end_index, max_depth=4, current_depth=0):
+def slow_sort_with_threading(unsorted_list, start_index,
+                             end_index, max_depth=4, current_depth=0):
     """
     A multithreaded implementation of the slowsort algorithm.
 
     Args:
-        list_to_be_sorted (list): The list to be sorted.
+        unsorted_list (list): The list to be sorted.
         start_index (int): Starting index of the segment of the list to be sorted.
         end_index (int): Ending index of the segment of the list to be sorted.
         max_depth (int): Maximum depth to create new threads for sorting.
@@ -25,9 +27,9 @@ def slow_sort_with_threading(list_to_be_sorted, start_index, end_index, max_dept
 
     if current_depth < max_depth:
         thread1 = threading.Thread(target=slow_sort_with_threading,
-                                   args=(list_to_be_sorted, start_index, middle_index, max_depth, current_depth + 1))
+                                   args=(unsorted_list, start_index, middle_index, max_depth, current_depth + 1))
         thread2 = threading.Thread(target=slow_sort_with_threading,
-                                   args=(list_to_be_sorted, middle_index + 1, end_index, max_depth, current_depth + 1))
+                                   args=(unsorted_list, middle_index + 1, end_index, max_depth, current_depth + 1))
 
         thread1.start()
         thread2.start()
@@ -35,14 +37,14 @@ def slow_sort_with_threading(list_to_be_sorted, start_index, end_index, max_dept
         thread1.join()
         thread2.join()
     else:
-        slow_sort_with_threading(list_to_be_sorted, start_index, middle_index, max_depth, current_depth + 1)
-        slow_sort_with_threading(list_to_be_sorted, middle_index + 1, end_index, max_depth, current_depth + 1)
+        slow_sort_with_threading(unsorted_list, start_index, middle_index, max_depth, current_depth + 1)
+        slow_sort_with_threading(unsorted_list, middle_index + 1, end_index, max_depth, current_depth + 1)
 
-    if list_to_be_sorted[end_index] < list_to_be_sorted[middle_index]:
-        list_to_be_sorted[end_index], list_to_be_sorted[middle_index] = \
-            list_to_be_sorted[middle_index], list_to_be_sorted[end_index]
+    if unsorted_list[end_index] < unsorted_list[middle_index]:
+        unsorted_list[end_index], unsorted_list[middle_index] = \
+            unsorted_list[middle_index], unsorted_list[end_index]
 
-    slow_sort_with_threading(list_to_be_sorted, start_index, end_index - 1, max_depth, current_depth + 1)
+    slow_sort_with_threading(unsorted_list, start_index, end_index - 1, max_depth, current_depth + 1)
 
 
 def read_file(file_path):
@@ -103,10 +105,11 @@ def main():
                 else:
                     print(f"Error processing line {line}: {result.stderr.strip()}")
 
-            slow_sort_with_threading(lines_new, 0, len(lines_new) - 1)
-
+        slow_sort_with_threading(lines_new, 0, len(lines_new) - 1)
         write_file(new_file, lines_new)
         change_file_permissions(new_file)
+
+    exit(0)
 
 
 if __name__ == '__main__':
