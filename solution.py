@@ -68,8 +68,12 @@ def write_file(file_path: str, lines: list) -> None:
     :param file_path: name of the file
     :return:
     '''
-    with open(file_path, 'w') as file:
-        file.write(lines)
+    if os.path.isfile(file_path):
+        with open(file_path, 'w') as file:
+            file.write(lines)
+    else:
+        with open(file_path, 'x') as file:
+            file.write(lines)
 
 
 # numbers = subprocess.run(["./calc.sh", numbers], capture_output=True, text=True)
@@ -78,8 +82,19 @@ def write_file(file_path: str, lines: list) -> None:
 
 
 def main():
+    '''
+    main function
+    :return:
+    '''
     file_list_old = [f"{i}-{i + 99}.csv" for i in range(1, 601, 100)]
     file_list_new = [f"{i}-{(i + 198)}.csv" for i in range(2, 1200, 200)]
+    lines_new = []
+
+    for i in range(len(file_list_old)):
+        lines = read_file(file_list_old[i])
+        lines_new.append(
+            subprocess.run(["./calc.sh", lines], shell=True, stdout=subprocess.PIPE).stdout.decode('utf-8'))
+        write_file(file_list_new[i], lines_new)
 
     print(file_list_old)
     print(file_list_new)
