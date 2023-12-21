@@ -9,45 +9,6 @@ import threading
 SEMAPHORE = threading.Semaphore(2)
 
 
-def slow_sort_with_threading(unsorted_list, start,
-                             end, max_depth=4, cur_depth=0) -> None:
-    """
-    A multithreaded implementation of the slowsort algorithm.
-
-    Args:
-        unsorted_list (list): The list to be sorted.
-        start (int): Starting index of the segment of the list to be sorted.
-        end (int): Ending index of the segment of the list to be sorted.
-        max_depth (int): Maximum depth to create new threads for sorting.
-        cur_depth (int): Current depth in the recursion tree.
-    """
-    if start >= end:
-        return
-
-    mid = (start + end) // 2
-
-    if cur_depth < max_depth:
-        thread1 = threading.Thread(target=slow_sort_with_threading,
-                                   args=(unsorted_list, start, mid, max_depth, cur_depth + 1))
-        thread2 = threading.Thread(target=slow_sort_with_threading,
-                                   args=(unsorted_list, mid + 1, end, max_depth, cur_depth + 1))
-
-        thread1.start()
-        thread2.start()
-
-        thread1.join()
-        thread2.join()
-    else:
-        slow_sort_with_threading(unsorted_list, start, mid, max_depth, cur_depth + 1)
-        slow_sort_with_threading(unsorted_list, mid + 1, end, max_depth, cur_depth + 1)
-
-    if unsorted_list[end] < unsorted_list[mid]:
-        unsorted_list[end], unsorted_list[mid] = \
-            (unsorted_list[mid], unsorted_list[end])
-
-    slow_sort_with_threading(unsorted_list, start, end - 1, max_depth, cur_depth + 1)
-
-
 def read_file(file_path) -> list:
     """
     Reads a file and returns its contents as a list of lines.
@@ -77,6 +38,92 @@ def write_file(file_path, lines) -> None:
             file.writelines(f'{line}\n')
 
 
+def calc_double(value: str) -> int:
+    """
+    Calculate double of a given value using an external bash script.
+
+    This function calls an external bash script ('calc.sh') to double the input value.
+    It uses a semaphore to limit concurrent execution of the script.
+
+    Args:
+        value (str): The value to be doubled.
+
+    Returns:
+        int: The doubled value returned by the bash script.
+
+    Raises:
+        subprocess.CalledProcessError: If the subprocess encounters an error.
+    """
+    global SEMAPHORE
+
+    with SEMAPHORE:
+        try:
+            # Run the external bash script with the provided value
+            result = subprocess.run(["./calc.sh", str(value)],
+                                    capture_output=True, text=True, check=True)
+            # Return the doubled value if the script succeeds
+            if result.returncode == 0:
+                return int(result.stdout.strip())
+            else:
+                print(f"Error processing line {value}: {result.stderr.strip()}")
+        except subprocess.CalledProcessError as p_error:
+            # Handle any errors that occur during the subprocess execution
+            print(f'An error occurred: {p_error}')
+
+
+def slow_sort_start(unsorted_list, start, end):
+    """
+    First doubling all the values in the list then it is starting the slow_sort algoritm
+
+    Args:
+        unsorted_list (list): The list to be sorted.
+        start (int): Starting index of the segment of the list to be sorted.
+        end (int): Ending index of the segment of the list to be sorted.
+    """
+    for item in unsorted_list:
+        item = calc_double(item)
+    slow_sort(unsorted_list, start, end)
+
+
+def slow_sort(unsorted_list, start,
+              end, max_depth=4, cur_depth=0) -> None:
+    """
+    A multithreaded implementation of the slowsort algorithm.
+
+    Args:
+        unsorted_list (list): The list to be sorted.
+        start (int): Starting index of the segment of the list to be sorted.
+        end (int): Ending index of the segment of the list to be sorted.
+        max_depth (int): Maximum depth to create new threads for sorting.
+        cur_depth (int): Current depth in the recursion tree.
+    """
+    if start >= end:
+        return
+
+    mid = (start + end) // 2
+
+    if cur_depth < max_depth:
+        thread1 = threading.Thread(target=slow_sort,
+                                   args=(unsorted_list, start, mid, max_depth, cur_depth + 1))
+        thread2 = threading.Thread(target=slow_sort,
+                                   args=(unsorted_list, mid + 1, end, max_depth, cur_depth + 1))
+
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+    else:
+        slow_sort(unsorted_list, start, mid, max_depth, cur_depth + 1)
+        slow_sort(unsorted_list, mid + 1, end, max_depth, cur_depth + 1)
+
+    if unsorted_list[end] < unsorted_list[mid]:
+        unsorted_list[end], unsorted_list[mid] = \
+            (unsorted_list[mid], unsorted_list[end])
+
+    slow_sort(unsorted_list, start, end - 1, max_depth, cur_depth + 1)
+
+
 def change_file_permissions(file_path, permissions=0o600) -> None:
     """
     Changes the permissions of a file.
@@ -98,21 +145,8 @@ def main() -> None:
 
     for old_file, new_file in zip(file_list_old, file_list_new):
         lines = read_file(old_file)
-        lines_new = []
-        for line in lines:
-            with SEMAPHORE:
-                try:
-                    result = subprocess.run(["./calc.sh", str(line)],
-                                            capture_output=True, text=True, check=True)
-                except subprocess.CalledProcessError as p_error:
-                    print(f'An error occurred: {p_error}')
-                if result.returncode == 0:
-                    lines_new.append(int(result.stdout.strip()))
-                else:
-                    print(f"Error processing line {line}: {result.stderr.strip()}")
-        # important to sort int not string otherwise sort is not correct
-        slow_sort_with_threading(lines_new, 0, len(lines_new) - 1)
-        write_file(new_file, lines_new)
+        slow_sort_start(lines, 0, len(lines) - 1)
+        write_file(new_file, lines)
         change_file_permissions(new_file)
 
     sys.exit(0)
