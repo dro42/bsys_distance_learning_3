@@ -110,7 +110,7 @@ def main() -> None:
                     lines_new.append(int(result.stdout.strip()))
                 else:
                     print(f"Error processing line {line}: {result.stderr.strip()}")
-
+        # important to sort int not string otherwise sort is not correct
         slow_sort_with_threading(lines_new, 0, len(lines_new) - 1)
         write_file(new_file, lines_new)
         change_file_permissions(new_file)
