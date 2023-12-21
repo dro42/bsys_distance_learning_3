@@ -9,7 +9,8 @@ import threading
 SEMAPHORE = threading.Semaphore(2)
 
 
-def slow_sort_with_threading(unsorted_list, start, end, max_depth=4, cur_depth=0):
+def slow_sort_with_threading(unsorted_list, start,
+                             end, max_depth=4, cur_depth=0) -> None:
     """
     A multithreaded implementation of the slowsort algorithm.
 
@@ -25,29 +26,25 @@ def slow_sort_with_threading(unsorted_list, start, end, max_depth=4, cur_depth=0
 
     mid = (start + end) // 2
 
-    # Sort the first half
     if cur_depth < max_depth:
         thread1 = threading.Thread(target=slow_sort_with_threading,
                                    args=(unsorted_list, start, mid, max_depth, cur_depth + 1))
-        thread1.start()
-        thread1.join()
-    else:
-        slow_sort_with_threading(unsorted_list, start, mid, max_depth, cur_depth + 1)
-
-    # Sort the second half
-    if cur_depth < max_depth:
         thread2 = threading.Thread(target=slow_sort_with_threading,
                                    args=(unsorted_list, mid + 1, end, max_depth, cur_depth + 1))
+
+        thread1.start()
         thread2.start()
+
+        thread1.join()
         thread2.join()
     else:
+        slow_sort_with_threading(unsorted_list, start, mid, max_depth, cur_depth + 1)
         slow_sort_with_threading(unsorted_list, mid + 1, end, max_depth, cur_depth + 1)
 
-    # Perform the conditional swap
     if unsorted_list[end] < unsorted_list[mid]:
-        unsorted_list[end], unsorted_list[mid] = unsorted_list[mid], unsorted_list[end]
+        unsorted_list[end], unsorted_list[mid] = \
+            (unsorted_list[mid], unsorted_list[end])
 
-    # Recursively sort the list again, excluding the last element
     slow_sort_with_threading(unsorted_list, start, end - 1, max_depth, cur_depth + 1)
 
 
