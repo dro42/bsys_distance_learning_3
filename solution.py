@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# created by Andreas Drozd CSDCBB26
 """Importing needed modules for threading, triggering bash scripts and linux commands"""
 import os
 import subprocess
