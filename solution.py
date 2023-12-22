@@ -74,7 +74,7 @@ def slow_sort_start(unsorted_list, start, end):
     # Double each element in the list in place using list comprehension
     unsorted_list[:] = [calc_double(item) for item in unsorted_list]
 
-    # Sort the list using the slowsort algorithm
+    # Sort the list using the slow sort algorithm
     slow_sort(unsorted_list, start, end)
 
 
