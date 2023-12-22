@@ -54,15 +54,15 @@ def calc_double(value: str) -> Optional[int]:
         int: The doubled value returned by the bash script.
         None: If an error occurs or the script fails.
     """
-    with SEMAPHORE:
-        try:
+    try:
+        with SEMAPHORE:
             result = subprocess.run(["./calc.sh", str(value)],
                                     capture_output=True, text=True, check=True)
-            return int(result.stdout.strip())
-        except subprocess.CalledProcessError as p_error:
-            # Handle any errors that occur during the subprocess execution
-            print(f'An error occurred: {p_error}')
-            return None  # Explicitly return None in case of an error
+        return int(result.stdout.strip())
+    except subprocess.CalledProcessError as p_error:
+        # Handle any errors that occur during the subprocess execution
+        print(f'An error occurred: {p_error}')
+        return None  # Explicitly return None in case of an error
 
 
 def slow_sort_start(unsorted_list, start, end):
