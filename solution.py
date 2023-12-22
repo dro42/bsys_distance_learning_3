@@ -6,9 +6,6 @@ import sys
 import threading
 from typing import Optional
 
-# Global semaphore to control the concurrent execution of the calc.sh script
-SEMAPHORE = threading.Semaphore(2)
-
 
 def read_file(file_path) -> list:
     """
@@ -53,11 +50,11 @@ def calc_double(value: str) -> Optional[int]:
         int: The doubled value returned by the bash script.
         None: If an error occurs or the script fails.
     """
-    with SEMAPHORE:
+    semaphore = threading.Semaphore(2)
+    with semaphore:
         try:
             result = subprocess.run(["./calc.sh", str(value)],
                                     capture_output=True, text=True, check=True)
-            # Return the doubled value if the script succeeds
             return int(result.stdout.strip())
         except subprocess.CalledProcessError as p_error:
             # Handle any errors that occur during the subprocess execution
