@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import threading
+from typing import Optional
 
 # Global semaphore to control the concurrent execution of the calc.sh script
 SEMAPHORE = threading.Semaphore(2)
@@ -38,7 +39,7 @@ def write_file(file_path, lines) -> None:
             file.writelines(f'{line}\n')
 
 
-def calc_double(value: str) -> int:
+def calc_double(value: str) -> Optional[int]:
     """
     Calculate double of a given value using an external bash script.
 
@@ -50,21 +51,18 @@ def calc_double(value: str) -> int:
 
     Returns:
         int: The doubled value returned by the bash script.
-
-    Raises:
-        subprocess.CalledProcessError: If the subprocess encounters an error.
+        None: If an error occurs or the script fails.
     """
     with SEMAPHORE:
         try:
-            # Run the external bash script with the provided value
             result = subprocess.run(["./calc.sh", str(value)],
                                     capture_output=True, text=True, check=True)
+            # Return the doubled value if the script succeeds
+            return int(result.stdout.strip())
         except subprocess.CalledProcessError as p_error:
             # Handle any errors that occur during the subprocess execution
             print(f'An error occurred: {p_error}')
-    # Return the doubled value if the script succeeds
-    if result.returncode == 0:
-        return int(result.stdout.strip())
+            return None  # Explicitly return None in case of an error
 
 
 def slow_sort_start(unsorted_list, start, end):
@@ -86,7 +84,7 @@ def slow_sort_start(unsorted_list, start, end):
 def slow_sort(unsorted_list, start,
               end, max_depth=4, cur_depth=0) -> None:
     """
-    A multithreaded implementation of the slowsort algorithm.
+    A multithreading implementation of the slow sort algorithm.
 
     Args:
         unsorted_list (list): The list to be sorted.
