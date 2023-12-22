@@ -54,34 +54,32 @@ def calc_double(value: str) -> int:
     Raises:
         subprocess.CalledProcessError: If the subprocess encounters an error.
     """
-    global SEMAPHORE
-
     with SEMAPHORE:
         try:
             # Run the external bash script with the provided value
             result = subprocess.run(["./calc.sh", str(value)],
                                     capture_output=True, text=True, check=True)
-            # Return the doubled value if the script succeeds
-            if result.returncode == 0:
-                return int(result.stdout.strip())
-            else:
-                print(f"Error processing line {value}: {result.stderr.strip()}")
         except subprocess.CalledProcessError as p_error:
             # Handle any errors that occur during the subprocess execution
             print(f'An error occurred: {p_error}')
+    # Return the doubled value if the script succeeds
+    if result.returncode == 0:
+        return int(result.stdout.strip())
 
 
 def slow_sort_start(unsorted_list, start, end):
     """
-    First doubling all the values in the list then it is starting the slow_sort algoritm
+        Doubles all the values in the list and then sorts the list using the slow_sort algorithm.
 
-    Args:
-        unsorted_list (list): The list to be sorted.
-        start (int): Starting index of the segment of the list to be sorted.
-        end (int): Ending index of the segment of the list to be sorted.
-    """
-    for item in unsorted_list:
-        item = calc_double(item)
+        Args:
+            unsorted_list (list): The list to be sorted.
+            start (int): Starting index of the segment of the list to be sorted.
+            end (int): Ending index of the segment of the list to be sorted.
+        """
+    # Double each element in the list in place using list comprehension
+    unsorted_list[:] = [calc_double(item) for item in unsorted_list]
+
+    # Sort the list using the slowsort algorithm
     slow_sort(unsorted_list, start, end)
 
 
