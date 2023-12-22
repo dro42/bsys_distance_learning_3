@@ -11,7 +11,7 @@ from typing import Optional
 SEMAPHORE = threading.Semaphore(2)
 
 
-def read_file(file_path) -> list:
+def read_file(file_path: str) -> list:
     """
     Reads a file and returns its contents as a list of lines.
 
@@ -25,7 +25,7 @@ def read_file(file_path) -> list:
         return [int(line.strip()) for line in file]
 
 
-def write_file(file_path, lines) -> None:
+def write_file(file_path: str, lines: list) -> None:
     """
     Writes a list of lines to a file. If the file exists, it's overwritten;
     otherwise, a new file is created.
@@ -36,8 +36,7 @@ def write_file(file_path, lines) -> None:
     """
     mode = 'w' if os.path.isfile(file_path) else 'x'
     with open(file_path, mode) as file:
-        for line in lines:
-            file.writelines(f'{line}\n')
+        file.writelines(f'{line}\n' for line in lines)
 
 
 def calc_double(value: str) -> Optional[int]:
@@ -65,7 +64,7 @@ def calc_double(value: str) -> Optional[int]:
         return None  # Explicitly return None in case of an error
 
 
-def slow_sort_start(unsorted_list, start, end):
+def slow_sort_start(unsorted_list: list, start: int, end: int) -> None:
     """
         Doubles all the values in the list and then sorts the list using the slow_sort algorithm.
 
@@ -81,8 +80,7 @@ def slow_sort_start(unsorted_list, start, end):
     slow_sort(unsorted_list, start, end)
 
 
-def slow_sort(unsorted_list, start,
-              end) -> None:
+def slow_sort(unsorted_list: list, start: int, end: int) -> None:
     """
     A multithreading implementation of the slow sort algorithm.
 
@@ -108,7 +106,7 @@ def slow_sort(unsorted_list, start,
     slow_sort(unsorted_list, start, end - 1)
 
 
-def change_file_permissions(file_path, permissions=0o600) -> None:
+def change_file_permissions(file_path: str, permissions=0o600) -> None:
     """
     Changes the permissions of a file.
 
@@ -119,7 +117,7 @@ def change_file_permissions(file_path, permissions=0o600) -> None:
     os.chmod(file_path, permissions)
 
 
-def process_file(old_file, new_file):
+def process_file(old_file: str, new_file: str) -> None:
     """
     Function to process a single file: read, sort, write, and change permissions.
 
@@ -141,12 +139,10 @@ def main() -> None:
     file_list_old = [f"{i}-{i + 99}.csv" for i in range(1, 601, 100)]
     file_list_new = [f"{i}-{i + 198}.csv" for i in range(2, 1200, 200)]
 
-    # Create threads using generator expression
-    threads = (threading.Thread(target=process_file, args=(old_file, new_file))
-               for old_file, new_file in zip(file_list_old, file_list_new))
-
-    # Start threads
-    for thread in threads:
+    threads = []
+    for old_file, new_file in zip(file_list_old, file_list_new):
+        thread = threading.Thread(target=process_file, args=(old_file, new_file))
+        threads.append(thread)
         thread.start()
 
     # Wait for all threads to complete
